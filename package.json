@@ -1,0 +1,15 @@
+{
+  "name": "arma-reforger-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for Arma Reforger rank, nationality, and war management",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "canvas": "^3.2.0",
+    "discord.js": "^14.14.1",
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2"
+  }
+}

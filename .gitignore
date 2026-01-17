@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Environment variables (contains secrets!)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Runtime data (can be regenerated)
+player_data.json
+territory_data.json
+war_state.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Build artifacts
+dist/
+build/
