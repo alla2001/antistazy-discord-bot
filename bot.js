@@ -1397,18 +1397,13 @@ app.use((req, res, next) => {
     next();
 });
 
-// Get player data by Steam ID or username
+// Get player data by linked identity (steamId field)
 app.get('/api/player/:identifier', (req, res) => {
     const id = req.params.identifier;
-    console.log(`[API] Looking up player: ${id}`);
+    console.log(`[API] Looking up player by linked identity: ${id}`);
 
-    // Try to find by steamId first (linked Identity ID)
-    let player = Object.values(playerData).find(p => p.steamId === id);
-
-    // If not found, try by username (for Workbench testing)
-    if (!player) {
-        player = Object.values(playerData).find(p => p.username === id);
-    }
+    // Find by steamId (contains linked Identity ID, or player name when testing)
+    const player = Object.values(playerData).find(p => p.steamId === id);
 
     if (player) {
         console.log(`[API] Found player: ${player.username} (${player.nationality})`);
