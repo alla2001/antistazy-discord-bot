@@ -335,9 +335,9 @@ async function generateMapImage(bases) {
 
     // Faction colors
     const factionColors = {
-        'US': { color: '#3498db', name: 'US', borderColor: '#2980b9' },      // Blue
-        'USSR': { color: '#e74c3c', name: 'USSR', borderColor: '#c0392b' },      // Red
-        'FIA': { color: '#2ecc71', name: 'FIA', borderColor: '#27ae60' },       // Green
+        'US': { color: '#3498db', name: 'Meridian Federation', borderColor: '#2980b9' },      // Blue
+        'USSR': { color: '#e74c3c', name: 'Kharsovian Republic', borderColor: '#c0392b' },      // Red
+        'FIA': { color: '#2ecc71', name: 'Khorasan Covenant', borderColor: '#27ae60' },       // Green
         'Neutral': { color: '#95a5a6', name: 'Neutral', borderColor: '#7f8c8d' }     // Gray
     };
 
@@ -560,9 +560,9 @@ async function updateTerritoryMap(guild) {
 
         // Group bases by faction
         const factionBases = {
-            'US': { name: 'US 🔵', bases: [], hq: [], fobs: [], pois: [] },
-            'USSR': { name: 'USSR 🔴', bases: [], hq: [], fobs: [], pois: [] },
-            'FIA': { name: 'FIA 🟢', bases: [], hq: [], fobs: [], pois: [] },
+            'US': { name: 'Meridian Federation 🔵', bases: [], hq: [], fobs: [], pois: [] },
+            'USSR': { name: 'Kharsovian Republic 🔴', bases: [], hq: [], fobs: [], pois: [] },
+            'FIA': { name: 'Khorasan Covenant 🟢', bases: [], hq: [], fobs: [], pois: [] },
             'Neutral': { name: 'Neutral ⚪', bases: [], hq: [], fobs: [], pois: [] }
         };
 
