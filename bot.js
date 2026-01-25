@@ -24,29 +24,29 @@ const CONFIG = {
 };
 
 // Nationality and Rank definitions
-const NATIONALITIES = ['Kharsovian_Republic', 'Meridian_Federation', 'Khorasan_Covenant'];
+const NATIONALITIES = ['USSR', 'US', 'FIA'];
 const RANKS = ['Private', 'Sergeant', 'Lieutenant', 'Captain', 'General', 'Politician', 'Head_of_State'];
 
 // Channel mapping for nationality-restricted channels
 // Map nationality roles to their private channel names (with emoji prefixes)
 const NATIONALITY_CHANNELS = {
-    'Kharsovian_Republic': [
-        '『ℹ️』kharsovian-info',
-        '『📢』kharsovian-talk',
+    'USSR': [
+        '『ℹ️』ussr-info',
+        '『📢』ussr-talk',
         '『💬』chat',
         '『🔊』Voice Chat',
         '『🔴』National Gathering'
     ],
-    'Meridian_Federation': [
-        '『ℹ️』meridian-info',
-        '『📢』meridian-news',
+    'US': [
+        '『ℹ️』us-info',
+        '『📢』us-news',
         '『💬』chat',
         '『🔊』Voice Chat',
         '『📺』TV Station'
     ],
-    'Khorasan_Covenant': [
-        '『ℹ️』khorasan-info',
-        '『📢』khorasan-liberty',
+    'FIA': [
+        '『ℹ️』fia-info',
+        '『📢』fia-liberty',
         '『💬』chat',
         '『🔊』Voice Chat',
         '『📰』News Channel'
@@ -116,7 +116,7 @@ function saveData() {
 function getPlayerDataFromMember(member) {
     const nationality = NATIONALITIES.find(n =>
         member.roles.cache.some(role => role.name === n)
-    ) || 'Kharsovian_Republic'; // Default to Kharsovian_Republic
+    ) || 'USSR'; // Default to USSR
 
     const rank = RANKS.find(r =>
         member.roles.cache.some(role => role.name === r)
@@ -335,9 +335,9 @@ async function generateMapImage(bases) {
 
     // Faction colors
     const factionColors = {
-        'US': { color: '#3498db', name: 'Kharsovian', borderColor: '#2980b9' },      // Blue
-        'USSR': { color: '#e74c3c', name: 'Meridian', borderColor: '#c0392b' },      // Red
-        'FIA': { color: '#2ecc71', name: 'Khorasan', borderColor: '#27ae60' },       // Green
+        'US': { color: '#3498db', name: 'US', borderColor: '#2980b9' },      // Blue
+        'USSR': { color: '#e74c3c', name: 'USSR', borderColor: '#c0392b' },      // Red
+        'FIA': { color: '#2ecc71', name: 'FIA', borderColor: '#27ae60' },       // Green
         'Neutral': { color: '#95a5a6', name: 'Neutral', borderColor: '#7f8c8d' }     // Gray
     };
 
@@ -560,9 +560,9 @@ async function updateTerritoryMap(guild) {
 
         // Group bases by faction
         const factionBases = {
-            'US': { name: 'Kharsovian Republic 🔵', bases: [], hq: [], fobs: [], pois: [] },
-            'USSR': { name: 'Meridian Federation 🔴', bases: [], hq: [], fobs: [], pois: [] },
-            'FIA': { name: 'Khorasan Covenant 🟢', bases: [], hq: [], fobs: [], pois: [] },
+            'US': { name: 'US 🔵', bases: [], hq: [], fobs: [], pois: [] },
+            'USSR': { name: 'USSR 🔴', bases: [], hq: [], fobs: [], pois: [] },
+            'FIA': { name: 'FIA 🟢', bases: [], hq: [], fobs: [], pois: [] },
             'Neutral': { name: 'Neutral ⚪', bases: [], hq: [], fobs: [], pois: [] }
         };
 
@@ -1328,7 +1328,7 @@ client.on('interactionCreate', async interaction => {
 
             case 'leaderboard': {
                 // Group players by nationality and rank
-                const nations = { Kharsovian_Republic: [], Meridian_Federation: [], Khorasan_Covenant: [] };
+                const nations = { USSR: [], US: [], FIA: [] };
                 const rankOrder = { Head_of_State: 0, Politician: 1, General: 2, Captain: 3, Lieutenant: 4, Sergeant: 5, Private: 6 };
 
                 Object.values(playerData).forEach(player => {
