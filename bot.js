@@ -1398,19 +1398,60 @@ app.use((req, res, next) => {
 });
 
 // Get player data by linked identity (steamId field)
-app.get('/api/player/:identifier', (req, res) => {
+// Always fetches fresh nationality/rank from Discord roles
+app.get('/api/player/:identifier', async (req, res) => {
     const id = req.params.identifier;
     console.log(`[API] Looking up player by linked identity: ${id}`);
 
-    // Find by steamId (contains linked Identity ID, or player name when testing)
-    const player = Object.values(playerData).find(p => p.steamId === id);
+    // Debug: Show all linked steamIds
+    const linkedPlayers = Object.values(playerData).filter(p => p.steamId);
+    console.log(`[API] Available linked steamIds: ${linkedPlayers.map(p => `${p.steamId} (${p.username})`).join(', ') || 'NONE'}`);
 
-    if (player) {
-        console.log(`[API] Found player: ${player.username} (${player.nationality})`);
-        res.json(player);
-    } else {
-        console.log(`[API] Player not found: ${id}`);
-        res.status(404).json({ error: 'Player not found' });
+    // Find player entry by steamId
+    const playerEntry = Object.entries(playerData).find(([discordId, p]) => p.steamId === id);
+
+    if (!playerEntry) {
+        console.log(`[API] Player NOT FOUND: ${id}`);
+        console.log(`[API] Hint: Player needs to use /link command with identifier: ${id}`);
+        res.status(404).json({ error: 'Player not found', searchedFor: id });
+        return;
+    }
+
+    const [discordId, storedData] = playerEntry;
+
+    // Fetch FRESH data from Discord roles
+    try {
+        const guild = client.guilds.cache.get(CONFIG.GUILD_ID);
+        if (!guild) {
+            console.log(`[API] Guild not found, using stored data`);
+            res.json(storedData);
+            return;
+        }
+
+        const member = await guild.members.fetch(discordId).catch(() => null);
+        if (!member) {
+            console.log(`[API] Member ${discordId} not in guild, using stored data`);
+            res.json(storedData);
+            return;
+        }
+
+        // Get fresh nationality/rank from Discord roles
+        const freshData = getPlayerDataFromMember(member);
+
+        const response = {
+            discordId: discordId,
+            username: member.user.username,
+            nationality: freshData.nationality,
+            rank: freshData.rank,
+            steamId: storedData.steamId
+        };
+
+        console.log(`[API] Found player: ${response.username} (${response.nationality}) - FRESH from Discord roles`);
+        res.json(response);
+    } catch (err) {
+        console.error(`[API] Error fetching Discord data:`, err);
+        // Fallback to stored data
+        res.json(storedData);
     }
 });
 
