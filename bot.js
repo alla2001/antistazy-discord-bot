@@ -112,6 +112,18 @@ function saveData() {
     }
 }
 
+// Nationality display names mapping
+const NATIONALITY_DISPLAY_NAMES = {
+    'US': 'Meridian Federation',
+    'USSR': 'Kharsovian Republic',
+    'FIA': 'Khorasan Covenant'
+};
+
+// Get display name for nationality
+function getNationalityDisplayName(code) {
+    return NATIONALITY_DISPLAY_NAMES[code] || code;
+}
+
 // Get player data from Discord roles
 function getPlayerDataFromMember(member) {
     const nationality = NATIONALITIES.find(n =>
@@ -1274,7 +1286,7 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.reply(
                     `**Your Info:**\n` +
-                    `Nationality: **${data.nationality.replace(/_/g, ' ')}**\n` +
+                    `Nationality: **${getNationalityDisplayName(data.nationality)}**\n` +
                     `Rank: **${data.rank.replace(/_/g, ' ')}**\n` +
                     `Steam ID: ${steamId}`
                 );
@@ -1289,7 +1301,7 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.reply(
                     `**${targetUser.username}'s Info:**\n` +
-                    `Nationality: **${data.nationality.replace(/_/g, ' ')}**\n` +
+                    `Nationality: **${getNationalityDisplayName(data.nationality)}**\n` +
                     `Rank: **${data.rank.replace(/_/g, ' ')}**\n` +
                     `Steam ID: ${steamId}`
                 );
@@ -1300,11 +1312,11 @@ client.on('interactionCreate', async interaction => {
                 if (warState.active) {
                     const startTime = warState.declaredAt ? new Date(warState.declaredAt).toLocaleString() : 'Unknown';
                     const duration = warState.declaredAt ? Math.floor((Date.now() - new Date(warState.declaredAt)) / 60000) : 0;
-                    const targetsDisplay = warState.targetNations.map(n => `**${n.replace(/_/g, ' ')}**`).join(', ');
+                    const targetsDisplay = warState.targetNations.map(n => `**${getNationalityDisplayName(n)}**`).join(', ');
 
                     await interaction.reply(
                         `🔴 **WAR IS ACTIVE**\n` +
-                        `**${warState.declaredByNation.replace(/_/g, ' ')}** vs ${targetsDisplay}\n\n` +
+                        `**${getNationalityDisplayName(warState.declaredByNation)}** vs ${targetsDisplay}\n\n` +
                         `Declared by: Head of State ${warState.declaredBy}\n` +
                         `Started: ${startTime}\n` +
                         `Duration: ${duration} minutes\n` +
@@ -1346,7 +1358,7 @@ client.on('interactionCreate', async interaction => {
 
                 for (const [nation, players] of Object.entries(nations)) {
                     if (players.length > 0) {
-                        response += `**${nation.replace(/_/g, ' ')}** (${players.length} players)\n`;
+                        response += `**${getNationalityDisplayName(nation)}** (${players.length} players)\n`;
                         players.forEach(p => {
                             const steamLinked = p.steamId ? '🔗' : '❌';
                             response += `  ${steamLinked} ${p.rank.replace(/_/g, ' ')} - ${p.username}\n`;
