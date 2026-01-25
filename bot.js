@@ -771,7 +771,7 @@ const commands = [
                 .setDescription('Nationality')
                 .setRequired(true)
                 .addChoices(
-                    ...NATIONALITIES.map(n => ({ name: n, value: n }))
+                    ...NATIONALITIES.map(n => ({ name: getNationalityDisplayName(n), value: n }))
                 ))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
@@ -799,7 +799,7 @@ const commands = [
                 .setDescription('Your nationality')
                 .setRequired(true)
                 .addChoices(
-                    ...NATIONALITIES.map(n => ({ name: n.replace(/_/g, ' '), value: n }))
+                    ...NATIONALITIES.map(n => ({ name: getNationalityDisplayName(n), value: n }))
                 )),
 
     new SlashCommandBuilder()
@@ -818,21 +818,21 @@ const commands = [
                 .setDescription('First nation to declare war against')
                 .setRequired(true)
                 .addChoices(
-                    ...NATIONALITIES.map(n => ({ name: n.replace(/_/g, ' '), value: n }))
+                    ...NATIONALITIES.map(n => ({ name: getNationalityDisplayName(n), value: n }))
                 ))
         .addStringOption(option =>
             option.setName('target2')
                 .setDescription('Second nation (optional)')
                 .setRequired(false)
                 .addChoices(
-                    ...NATIONALITIES.map(n => ({ name: n.replace(/_/g, ' '), value: n }))
+                    ...NATIONALITIES.map(n => ({ name: getNationalityDisplayName(n), value: n }))
                 ))
         .addStringOption(option =>
             option.setName('target3')
                 .setDescription('Third nation (optional)')
                 .setRequired(false)
                 .addChoices(
-                    ...NATIONALITIES.map(n => ({ name: n.replace(/_/g, ' '), value: n }))
+                    ...NATIONALITIES.map(n => ({ name: getNationalityDisplayName(n), value: n }))
                 )),
 
     new SlashCommandBuilder()
@@ -843,21 +843,21 @@ const commands = [
                 .setDescription('First nation to make peace with')
                 .setRequired(true)
                 .addChoices(
-                    ...NATIONALITIES.map(n => ({ name: n.replace(/_/g, ' '), value: n }))
+                    ...NATIONALITIES.map(n => ({ name: getNationalityDisplayName(n), value: n }))
                 ))
         .addStringOption(option =>
             option.setName('target2')
                 .setDescription('Second nation (optional)')
                 .setRequired(false)
                 .addChoices(
-                    ...NATIONALITIES.map(n => ({ name: n.replace(/_/g, ' '), value: n }))
+                    ...NATIONALITIES.map(n => ({ name: getNationalityDisplayName(n), value: n }))
                 ))
         .addStringOption(option =>
             option.setName('target3')
                 .setDescription('Third nation (optional)')
                 .setRequired(false)
                 .addChoices(
-                    ...NATIONALITIES.map(n => ({ name: n.replace(/_/g, ' '), value: n }))
+                    ...NATIONALITIES.map(n => ({ name: getNationalityDisplayName(n), value: n }))
                 )),
 
     new SlashCommandBuilder()
@@ -963,7 +963,7 @@ client.on('interactionCreate', async interaction => {
 
                 saveData();
 
-                await interaction.reply(`✅ Set ${targetUser.username}'s nationality to **${nationality.replace(/_/g, ' ')}**\nRole ${roleAdded ? 'applied' : 'not found (check server roles)'}`);
+                await interaction.reply(`✅ Set ${targetUser.username}'s nationality to **${getNationalityDisplayName(nationality)}**\nRole ${roleAdded ? 'applied' : 'not found (check server roles)'}`);
                 break;
             }
 
@@ -1087,7 +1087,7 @@ client.on('interactionCreate', async interaction => {
 
                 saveData();
 
-                let response = `✅ Set your nationality to **${nationality.replace(/_/g, ' ')}**\n`;
+                let response = `✅ Set your nationality to **${getNationalityDisplayName(nationality)}**\n`;
                 if (roleAdded) {
                     response += `Nationality role applied!\n`;
                 } else {
@@ -1117,7 +1117,7 @@ client.on('interactionCreate', async interaction => {
 
                 saveData();
 
-                await interaction.reply(`✅ Linked Game Identity ID: ${identityId}\n\n**You're ready to play!**\nYou can spawn on ${data.nationality.replace(/_/g, ' ')} bases (${s_mNationalityToFaction ? 'checking faction...' : 'faction mapping pending'})`);
+                await interaction.reply(`✅ Linked Game Identity ID: ${identityId}\n\n**You're ready to play!**\nYou can spawn on ${getNationalityDisplayName(data.nationality)} bases (${s_mNationalityToFaction ? 'checking faction...' : 'faction mapping pending'})`);
                 break;
             }
 
@@ -1155,7 +1155,7 @@ client.on('interactionCreate', async interaction => {
                     const newTargets = targetNations.filter(t => !warState.targetNations.includes(t));
 
                     if (newTargets.length === 0) {
-                        const alreadyAtWarDisplay = alreadyAtWar.map(n => n.replace(/_/g, ' ')).join(', ');
+                        const alreadyAtWarDisplay = alreadyAtWar.map(n => getNationalityDisplayName(n)).join(', ');
                         await interaction.reply(`❌ You are already at war with: ${alreadyAtWarDisplay}`);
                         return;
                     }
@@ -1165,11 +1165,11 @@ client.on('interactionCreate', async interaction => {
                     warState.participants.push(...newTargets);
                     saveData();
 
-                    const newTargetsDisplay = newTargets.map(n => n.replace(/_/g, ' ')).join('\n  • ');
-                    const allTargetsDisplay = warState.targetNations.map(n => n.replace(/_/g, ' ')).join('\n  • ');
+                    const newTargetsDisplay = newTargets.map(n => getNationalityDisplayName(n)).join('\n  • ');
+                    const allTargetsDisplay = warState.targetNations.map(n => getNationalityDisplayName(n)).join('\n  • ');
 
                     let response = `🔴 **WAR EXPANDED**\n` +
-                        `**${data.nationality.replace(/_/g, ' ')}** (Head of State: ${interaction.user.username})\n` +
+                        `**${getNationalityDisplayName(data.nationality)}** (Head of State: ${interaction.user.username})\n` +
                         `declares war on:\n` +
                         `  • ${newTargetsDisplay}\n\n` +
                         `**All enemies:**\n` +
@@ -1177,7 +1177,7 @@ client.on('interactionCreate', async interaction => {
                         `POI capture and full PvP remain enabled!`;
 
                     if (alreadyAtWar.length > 0) {
-                        const alreadyAtWarDisplay = alreadyAtWar.map(n => n.replace(/_/g, ' ')).join(', ');
+                        const alreadyAtWarDisplay = alreadyAtWar.map(n => getNationalityDisplayName(n)).join(', ');
                         response += `\n\n*Already at war with: ${alreadyAtWarDisplay}*`;
                     }
 
@@ -1192,11 +1192,11 @@ client.on('interactionCreate', async interaction => {
                     warState.participants = [data.nationality, ...targetNations];
                     saveData();
 
-                    const targetsDisplay = targetNations.map(n => n.replace(/_/g, ' ')).join('\n  • ');
+                    const targetsDisplay = targetNations.map(n => getNationalityDisplayName(n)).join('\n  • ');
 
                     await interaction.reply(
                         `🔴 **WAR DECLARED**\n` +
-                        `**${data.nationality.replace(/_/g, ' ')}** (Head of State: ${interaction.user.username})\n` +
+                        `**${getNationalityDisplayName(data.nationality)}** (Head of State: ${interaction.user.username})\n` +
                         `declares war on:\n` +
                         `  • ${targetsDisplay}\n\n` +
                         `POI capture and full PvP are now enabled!`
@@ -1232,7 +1232,7 @@ client.on('interactionCreate', async interaction => {
                 const invalidTargets = peaceTargets.filter(t => !warState.targetNations.includes(t) && warState.declaredByNation !== t);
 
                 if (invalidTargets.length > 0) {
-                    await interaction.reply(`❌ You are not at war with: ${invalidTargets.map(n => n.replace(/_/g, ' ')).join(', ')}`);
+                    await interaction.reply(`❌ You are not at war with: ${invalidTargets.map(n => getNationalityDisplayName(n)).join(', ')}`);
                     return;
                 }
 
@@ -1250,7 +1250,7 @@ client.on('interactionCreate', async interaction => {
                 warState.targetNations = warState.targetNations.filter(t => !validPeaceTargets.includes(t));
                 warState.participants = warState.participants.filter(p => !validPeaceTargets.includes(p) || p === warState.declaredByNation);
 
-                const peaceDisplay = validPeaceTargets.map(n => n.replace(/_/g, ' ')).join(', ');
+                const peaceDisplay = validPeaceTargets.map(n => getNationalityDisplayName(n)).join(', ');
 
                 // If no targets remain, end the war completely
                 if (warState.targetNations.length === 0) {
@@ -1263,16 +1263,16 @@ client.on('interactionCreate', async interaction => {
 
                     await interaction.reply(
                         `🟢 **PEACE DECLARED**\n` +
-                        `${data.nationality.replace(/_/g, ' ')} has made peace with: ${peaceDisplay}\n\n` +
+                        `${getNationalityDisplayName(data.nationality)} has made peace with: ${peaceDisplay}\n\n` +
                         `The war has ended.\n` +
                         `POI capture disabled. Movement still allowed.`
                     );
                 } else {
                     saveData();
-                    const remainingTargets = warState.targetNations.map(n => n.replace(/_/g, ' ')).join(', ');
+                    const remainingTargets = warState.targetNations.map(n => getNationalityDisplayName(n)).join(', ');
                     await interaction.reply(
                         `🟡 **PARTIAL PEACE DECLARED**\n` +
-                        `${data.nationality.replace(/_/g, ' ')} has made peace with: ${peaceDisplay}\n\n` +
+                        `${getNationalityDisplayName(data.nationality)} has made peace with: ${peaceDisplay}\n\n` +
                         `War continues with: ${remainingTargets}\n` +
                         `POI capture still enabled.`
                     );
