@@ -881,6 +881,27 @@ const commands = [
         .setDescription('Show all players by rank and nationality'),
 
     new SlashCommandBuilder()
+        .setName('promote')
+        .setDescription('Set rank of a citizen in your nation (Head of State only)')
+        .addUserOption(option =>
+            option.setName('player')
+                .setDescription('Player to promote/demote (must be in your nation)')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('rank')
+                .setDescription('New rank')
+                .setRequired(true)
+                .addChoices(
+                    { name: 'Private', value: 'Private' },
+                    { name: 'Sergeant', value: 'Sergeant' },
+                    { name: 'Lieutenant', value: 'Lieutenant' },
+                    { name: 'Captain', value: 'Captain' },
+                    { name: 'General', value: 'General' },
+                    { name: 'Politician', value: 'Politician' }
+                    // Head_of_State intentionally excluded - admin only
+                )),
+
+    new SlashCommandBuilder()
         .setName('sync')
         .setDescription('Sync all players (Admin only)')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
@@ -1372,6 +1393,72 @@ client.on('interactionCreate', async interaction => {
                 }
 
                 await interaction.reply(response);
+                break;
+            }
+
+            case 'promote': {
+                const commanderData = getPlayerDataFromMember(member);
+
+                // Check if user is Head of State
+                if (commanderData.rank !== 'Head_of_State') {
+                    await interaction.reply('❌ Only Heads of State can promote/demote citizens!');
+                    return;
+                }
+
+                const targetUser = interaction.options.getUser('player');
+                const newRank = interaction.options.getString('rank');
+                const targetMember = await interaction.guild.members.fetch(targetUser.id);
+                const targetData = getPlayerDataFromMember(targetMember);
+
+                // Check if target is in the same nation
+                if (targetData.nationality !== commanderData.nationality) {
+                    await interaction.reply(
+                        `❌ You can only promote/demote citizens of **${getNationalityDisplayName(commanderData.nationality)}**!\n` +
+                        `${targetUser.username} is a citizen of **${getNationalityDisplayName(targetData.nationality)}**.`
+                    );
+                    return;
+                }
+
+                // Prevent demoting yourself (Head of State)
+                if (targetUser.id === member.id) {
+                    await interaction.reply('❌ You cannot change your own rank!');
+                    return;
+                }
+
+                // Prevent changing another Head of State
+                if (targetData.rank === 'Head_of_State') {
+                    await interaction.reply('❌ You cannot change the rank of another Head of State!');
+                    return;
+                }
+
+                // Apply the rank change
+                let roleAdded = false;
+                for (const r of RANKS) {
+                    const role = interaction.guild.roles.cache.find(role => role.name === r);
+                    if (role) {
+                        if (r === newRank) {
+                            await targetMember.roles.add(role);
+                            roleAdded = true;
+                        } else {
+                            await targetMember.roles.remove(role);
+                        }
+                    }
+                }
+
+                // Update data
+                if (!playerData[targetUser.id]) playerData[targetUser.id] = {};
+                playerData[targetUser.id].rank = newRank;
+                playerData[targetUser.id].discordId = targetUser.id;
+                playerData[targetUser.id].username = targetUser.username;
+                playerData[targetUser.id].nationality = targetData.nationality;
+                saveData();
+
+                const action = RANKS.indexOf(newRank) < RANKS.indexOf(targetData.rank) ? '⬆️ PROMOTED' : '⬇️ DEMOTED';
+                await interaction.reply(
+                    `${action}\n` +
+                    `**${targetUser.username}** is now **${newRank.replace(/_/g, ' ')}**\n` +
+                    `By order of Head of State ${interaction.user.username} of ${getNationalityDisplayName(commanderData.nationality)}`
+                );
                 break;
             }
 
