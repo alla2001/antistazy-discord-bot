@@ -25,7 +25,7 @@ const CONFIG = {
 
 // Nationality and Rank definitions
 const NATIONALITIES = ['USSR', 'US', 'FIA'];
-const RANKS = ['Private', 'Sergeant', 'Lieutenant', 'Captain', 'General', 'Politician', 'Head_of_State'];
+const RANKS = ['Private', 'Corporal', 'Sergeant', 'Lieutenant', 'Captain', 'General', 'Politician', 'Head_of_State'];
 
 // Channel mapping for nationality-restricted channels
 // Map nationality roles to their private channel names (with emoji prefixes)
@@ -893,6 +893,7 @@ const commands = [
                 .setRequired(true)
                 .addChoices(
                     { name: 'Private', value: 'Private' },
+                    { name: 'Corporal', value: 'Corporal' },
                     { name: 'Sergeant', value: 'Sergeant' },
                     { name: 'Lieutenant', value: 'Lieutenant' },
                     { name: 'Captain', value: 'Captain' },
