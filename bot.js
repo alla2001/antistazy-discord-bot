@@ -130,7 +130,8 @@ function getPlayerDataFromMember(member) {
         member.roles.cache.some(role => role.name === n)
     ) || 'USSR'; // Default to USSR
 
-    const rank = RANKS.find(r =>
+    // Search from highest rank to lowest so we return the highest rank the player has
+    const rank = [...RANKS].reverse().find(r =>
         member.roles.cache.some(role => role.name === r)
     ) || 'Private'; // Default to Private
 
@@ -1043,6 +1044,15 @@ client.on('interactionCreate', async interaction => {
             case 'choosenationality': {
                 const nationality = interaction.options.getString('nationality');
 
+                // Block nationality changes during active war if player is a war participant
+                if (warState.active) {
+                    const currentData = getPlayerDataFromMember(member);
+                    if (warState.participants.includes(currentData.nationality) && currentData.nationality !== nationality) {
+                        await interaction.reply(`❌ You cannot change nationality during an active war!\n**${getNationalityDisplayName(currentData.nationality)}** is currently at war.`);
+                        return;
+                    }
+                }
+
                 // Add nationality role, remove old ones
                 let roleAdded = false;
                 for (const nat of NATIONALITIES) {
@@ -1139,7 +1149,7 @@ client.on('interactionCreate', async interaction => {
 
                 saveData();
 
-                await interaction.reply(`✅ Linked Game Identity ID: ${identityId}\n\n**You're ready to play!**\nYou can spawn on ${getNationalityDisplayName(data.nationality)} bases (${s_mNationalityToFaction ? 'checking faction...' : 'faction mapping pending'})`);
+                await interaction.reply(`✅ Linked Game Identity ID: ${identityId}\n\n**You're ready to play!**\nYou can spawn on **${getNationalityDisplayName(data.nationality)}** bases.`);
                 break;
             }
 
@@ -1176,31 +1186,53 @@ client.on('interactionCreate', async interaction => {
                     const alreadyAtWar = targetNations.filter(t => warState.targetNations.includes(t));
                     const newTargets = targetNations.filter(t => !warState.targetNations.includes(t));
 
-                    if (newTargets.length === 0) {
+                    // Check if declaring nation is already a participant
+                    const declarerAlreadyInWar = warState.participants.includes(data.nationality);
+
+                    if (newTargets.length === 0 && declarerAlreadyInWar) {
                         const alreadyAtWarDisplay = alreadyAtWar.map(n => getNationalityDisplayName(n)).join(', ');
                         await interaction.reply(`❌ You are already at war with: ${alreadyAtWarDisplay}`);
                         return;
                     }
 
-                    // Add new nations to war
-                    warState.targetNations.push(...newTargets);
-                    warState.participants.push(...newTargets);
+                    // Add new target nations to war
+                    if (newTargets.length > 0) {
+                        warState.targetNations.push(...newTargets);
+                        warState.participants.push(...newTargets);
+                    }
+                    // Add the declaring nation to participants if not already present
+                    if (!declarerAlreadyInWar) {
+                        warState.participants.push(data.nationality);
+                    }
                     saveData();
 
-                    const newTargetsDisplay = newTargets.map(n => getNationalityDisplayName(n)).join('\n  • ');
                     const allTargetsDisplay = warState.targetNations.map(n => getNationalityDisplayName(n)).join('\n  • ');
 
-                    let response = `🔴 **WAR EXPANDED**\n` +
-                        `**${getNationalityDisplayName(data.nationality)}** (Head of State: ${interaction.user.username})\n` +
-                        `declares war on:\n` +
-                        `  • ${newTargetsDisplay}\n\n` +
-                        `**All enemies:**\n` +
-                        `  • ${allTargetsDisplay}\n\n` +
-                        `POI capture and full PvP remain enabled!`;
+                    let response;
+                    if (!declarerAlreadyInWar && newTargets.length === 0) {
+                        // Nation joining an existing war against already-targeted nations
+                        const joinedAgainstDisplay = alreadyAtWar.map(n => getNationalityDisplayName(n)).join('\n  • ');
+                        response = `🔴 **WAR JOINED**\n` +
+                            `**${getNationalityDisplayName(data.nationality)}** (Head of State: ${interaction.user.username})\n` +
+                            `joins the war against:\n` +
+                            `  • ${joinedAgainstDisplay}\n\n` +
+                            `**All nations at war:**\n` +
+                            `  • ${warState.participants.map(n => getNationalityDisplayName(n)).join('\n  • ')}\n\n` +
+                            `POI capture and full PvP remain enabled!`;
+                    } else {
+                        const newTargetsDisplay = newTargets.map(n => getNationalityDisplayName(n)).join('\n  • ');
+                        response = `🔴 **WAR EXPANDED**\n` +
+                            `**${getNationalityDisplayName(data.nationality)}** (Head of State: ${interaction.user.username})\n` +
+                            `declares war on:\n` +
+                            `  • ${newTargetsDisplay}\n\n` +
+                            `**All enemies:**\n` +
+                            `  • ${allTargetsDisplay}\n\n` +
+                            `POI capture and full PvP remain enabled!`;
 
-                    if (alreadyAtWar.length > 0) {
-                        const alreadyAtWarDisplay = alreadyAtWar.map(n => getNationalityDisplayName(n)).join(', ');
-                        response += `\n\n*Already at war with: ${alreadyAtWarDisplay}*`;
+                        if (alreadyAtWar.length > 0) {
+                            const alreadyAtWarDisplay = alreadyAtWar.map(n => getNationalityDisplayName(n)).join(', ');
+                            response += `\n\n*Already at war with: ${alreadyAtWarDisplay}*`;
+                        }
                     }
 
                     await interaction.reply(response);
@@ -1237,6 +1269,12 @@ client.on('interactionCreate', async interaction => {
 
                 if (!warState.active) {
                     await interaction.reply('There is no active war!');
+                    return;
+                }
+
+                // Check if declaring nation is actually a war participant
+                if (!warState.participants.includes(data.nationality)) {
+                    await interaction.reply(`❌ **${getNationalityDisplayName(data.nationality)}** is not involved in the current war!`);
                     return;
                 }
 
@@ -1454,7 +1492,7 @@ client.on('interactionCreate', async interaction => {
                 playerData[targetUser.id].nationality = targetData.nationality;
                 saveData();
 
-                const action = RANKS.indexOf(newRank) < RANKS.indexOf(targetData.rank) ? '⬆️ PROMOTED' : '⬇️ DEMOTED';
+                const action = RANKS.indexOf(newRank) > RANKS.indexOf(targetData.rank) ? '⬆️ PROMOTED' : '⬇️ DEMOTED';
                 await interaction.reply(
                     `${action}\n` +
                     `**${targetUser.username}** is now **${newRank.replace(/_/g, ' ')}**\n` +
