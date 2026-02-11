@@ -794,14 +794,19 @@ const commands = [
 
     new SlashCommandBuilder()
         .setName('choosenationality')
-        .setDescription('Choose your nationality (everyone can use)')
+        .setDescription('Set a player\'s nationality (admin only)')
         .addStringOption(option =>
             option.setName('nationality')
-                .setDescription('Your nationality')
+                .setDescription('Nationality to assign')
                 .setRequired(true)
                 .addChoices(
                     ...NATIONALITIES.map(n => ({ name: getNationalityDisplayName(n), value: n }))
-                )),
+                ))
+        .addUserOption(option =>
+            option.setName('player')
+                .setDescription('Target player (defaults to yourself)')
+                .setRequired(false))
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     new SlashCommandBuilder()
         .setName('linkidentity')
@@ -1043,15 +1048,8 @@ client.on('interactionCreate', async interaction => {
 
             case 'choosenationality': {
                 const nationality = interaction.options.getString('nationality');
-
-                // Block nationality changes during active war if player is a war participant
-                if (warState.active) {
-                    const currentData = getPlayerDataFromMember(member);
-                    if (warState.participants.includes(currentData.nationality) && currentData.nationality !== nationality) {
-                        await interaction.reply(`❌ You cannot change nationality during an active war!\n**${getNationalityDisplayName(currentData.nationality)}** is currently at war.`);
-                        return;
-                    }
-                }
+                const targetUser = interaction.options.getUser('player') || interaction.user;
+                const targetMember = interaction.options.getMember('player') || member;
 
                 // Add nationality role, remove old ones
                 let roleAdded = false;
@@ -1059,11 +1057,11 @@ client.on('interactionCreate', async interaction => {
                     const role = interaction.guild.roles.cache.find(r => r.name === nat);
                     if (role) {
                         if (nat === nationality) {
-                            await member.roles.add(role);
+                            await targetMember.roles.add(role);
                             roleAdded = true;
-                            console.log(`Added ${nationality} role to ${interaction.user.username}`);
+                            console.log(`Added ${nationality} role to ${targetUser.username}`);
                         } else {
-                            await member.roles.remove(role);
+                            await targetMember.roles.remove(role);
                         }
                     } else if (nat === nationality) {
                         console.warn(`WARNING: Role ${nationality} does not exist!`);
@@ -1072,9 +1070,9 @@ client.on('interactionCreate', async interaction => {
                             const createdRole = await interaction.guild.roles.create({
                                 name: nationality,
                                 color: 'Blue',
-                                reason: 'Auto-created when player chose nationality'
+                                reason: 'Auto-created when admin set nationality'
                             });
-                            await member.roles.add(createdRole);
+                            await targetMember.roles.add(createdRole);
                             roleAdded = true;
                             console.log(`Successfully created and assigned role: ${nationality}`);
                         } catch (error) {
@@ -1084,16 +1082,15 @@ client.on('interactionCreate', async interaction => {
                 }
 
                 // Check if user has a rank, if not, assign Private
-                const currentData = getPlayerDataFromMember(member);
+                const currentData = getPlayerDataFromMember(targetMember);
                 let rankAssigned = false;
 
-                if (currentData.rank === 'Private' && !member.roles.cache.some(r => RANKS.includes(r.name))) {
-                    // User has no rank role, assign Private
+                if (currentData.rank === 'Private' && !targetMember.roles.cache.some(r => RANKS.includes(r.name))) {
                     const privateRole = interaction.guild.roles.cache.find(r => r.name === 'Private');
                     if (privateRole) {
-                        await member.roles.add(privateRole);
+                        await targetMember.roles.add(privateRole);
                         rankAssigned = true;
-                        console.log(`Auto-assigned Private rank to ${interaction.user.username}`);
+                        console.log(`Auto-assigned Private rank to ${targetUser.username}`);
                     } else {
                         try {
                             const createdRole = await interaction.guild.roles.create({
@@ -1101,9 +1098,9 @@ client.on('interactionCreate', async interaction => {
                                 color: 'Green',
                                 reason: 'Auto-created when assigning default rank'
                             });
-                            await member.roles.add(createdRole);
+                            await targetMember.roles.add(createdRole);
                             rankAssigned = true;
-                            console.log(`Created and assigned Private rank to ${interaction.user.username}`);
+                            console.log(`Created and assigned Private rank to ${targetUser.username}`);
                         } catch (error) {
                             console.error('Failed to create Private role:', error.message);
                         }
@@ -1111,15 +1108,15 @@ client.on('interactionCreate', async interaction => {
                 }
 
                 // Update data
-                if (!playerData[member.id]) playerData[member.id] = {};
-                playerData[member.id].nationality = nationality;
-                playerData[member.id].rank = currentData.rank;
-                playerData[member.id].discordId = member.id;
-                playerData[member.id].username = interaction.user.username;
+                if (!playerData[targetUser.id]) playerData[targetUser.id] = {};
+                playerData[targetUser.id].nationality = nationality;
+                playerData[targetUser.id].rank = currentData.rank;
+                playerData[targetUser.id].discordId = targetUser.id;
+                playerData[targetUser.id].username = targetUser.username;
 
                 saveData();
 
-                let response = `✅ Set your nationality to **${getNationalityDisplayName(nationality)}**\n`;
+                let response = `✅ Set ${targetUser.username}'s nationality to **${getNationalityDisplayName(nationality)}**\n`;
                 if (roleAdded) {
                     response += `Nationality role applied!\n`;
                 } else {
@@ -1127,8 +1124,7 @@ client.on('interactionCreate', async interaction => {
                 }
 
                 if (rankAssigned) {
-                    response += `\n🎖️ You've been assigned the rank: **Private**\n`;
-                    response += `*Admins can promote you later using /setrank*`;
+                    response += `\n🎖️ ${targetUser.username} has been assigned the rank: **Private**`;
                 }
 
                 await interaction.reply(response);
@@ -1437,10 +1433,11 @@ client.on('interactionCreate', async interaction => {
 
             case 'promote': {
                 const commanderData = getPlayerDataFromMember(member);
+                const isAdmin = member.permissions.has(PermissionFlagsBits.Administrator);
 
-                // Check if user is Head of State
-                if (commanderData.rank !== 'Head_of_State') {
-                    await interaction.reply('❌ Only Heads of State can promote/demote citizens!');
+                // Check if user is Head of State or Admin
+                if (commanderData.rank !== 'Head_of_State' && !isAdmin) {
+                    await interaction.reply('❌ Only Heads of State and Admins can promote/demote citizens!');
                     return;
                 }
 
@@ -1449,8 +1446,8 @@ client.on('interactionCreate', async interaction => {
                 const targetMember = await interaction.guild.members.fetch(targetUser.id);
                 const targetData = getPlayerDataFromMember(targetMember);
 
-                // Check if target is in the same nation
-                if (targetData.nationality !== commanderData.nationality) {
+                // Check if target is in the same nation (admins bypass this)
+                if (!isAdmin && targetData.nationality !== commanderData.nationality) {
                     await interaction.reply(
                         `❌ You can only promote/demote citizens of **${getNationalityDisplayName(commanderData.nationality)}**!\n` +
                         `${targetUser.username} is a citizen of **${getNationalityDisplayName(targetData.nationality)}**.`
