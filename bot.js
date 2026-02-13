@@ -439,7 +439,7 @@ async function generateMapImage(bases) {
 
         // Draw base name with shadow
         const baseName = base.name || 'Unknown';
-        ctx.font = 'bold 14px Arial';
+        ctx.font = 'bold 14px "DejaVu Sans", "Liberation Sans", sans-serif';
         ctx.textAlign = 'center';
 
         // Shadow/outline for contrast
@@ -462,11 +462,11 @@ async function generateMapImage(bases) {
 
     // Legend title
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 16px Arial';
+    ctx.font = 'bold 16px "DejaVu Sans", "Liberation Sans", sans-serif';
     ctx.fillText('FACTIONS', legendX, legendY + 10);
 
     // Legend entries
-    ctx.font = '14px Arial';
+    ctx.font = '14px "DejaVu Sans", "Liberation Sans", sans-serif';
     let yOffset = 35;
     for (const [key, info] of Object.entries(factionColors)) {
         ctx.fillStyle = info.color;
@@ -481,10 +481,10 @@ async function generateMapImage(bases) {
 
     // Shape legend
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 16px Arial';
+    ctx.font = 'bold 16px "DejaVu Sans", "Liberation Sans", sans-serif';
     ctx.fillText('TYPES', legendX + 250, legendY + 10);
 
-    ctx.font = '14px Arial';
+    ctx.font = '14px "DejaVu Sans", "Liberation Sans", sans-serif';
     ctx.fillStyle = '#3498db';
 
     // HQ marker
