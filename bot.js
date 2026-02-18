@@ -2,7 +2,33 @@ const { Client, GatewayIntentBits, PermissionFlagsBits, SlashCommandBuilder, RES
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { createCanvas, loadImage } = require('canvas');
+const { createCanvas, loadImage, registerFont } = require('canvas');
+
+// Register a system font for canvas rendering (Linux servers often lack default fonts)
+const FONT_PATHS = [
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+    '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+    '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+    '/usr/share/fonts/TTF/DejaVuSans-Bold.ttf',
+    '/usr/share/fonts/TTF/DejaVuSans.ttf'
+];
+
+let fontRegistered = false;
+for (const fontPath of FONT_PATHS) {
+    if (fs.existsSync(fontPath)) {
+        try {
+            registerFont(fontPath, { family: 'MapFont', weight: fontPath.includes('Bold') ? 'bold' : 'normal' });
+            fontRegistered = true;
+            console.log(`[Font] Registered: ${fontPath}`);
+        } catch (err) {
+            console.warn(`[Font] Failed to register ${fontPath}: ${err.message}`);
+        }
+    }
+}
+if (!fontRegistered) {
+    console.warn('[Font] WARNING: No system fonts found! Text on map will show as squares. Install fonts: sudo apt install fonts-dejavu-core');
+}
 
 // Load environment variables from .env file if it exists
 require('dotenv').config();
@@ -439,7 +465,7 @@ async function generateMapImage(bases) {
 
         // Draw base name with shadow
         const baseName = base.name || 'Unknown';
-        ctx.font = 'bold 14px "DejaVu Sans", "Liberation Sans", sans-serif';
+        ctx.font = 'bold 14px MapFont';
         ctx.textAlign = 'center';
 
         // Shadow/outline for contrast
@@ -462,11 +488,11 @@ async function generateMapImage(bases) {
 
     // Legend title
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 16px "DejaVu Sans", "Liberation Sans", sans-serif';
+    ctx.font = 'bold 16px MapFont';
     ctx.fillText('FACTIONS', legendX, legendY + 10);
 
     // Legend entries
-    ctx.font = '14px "DejaVu Sans", "Liberation Sans", sans-serif';
+    ctx.font = '14px MapFont';
     let yOffset = 35;
     for (const [key, info] of Object.entries(factionColors)) {
         ctx.fillStyle = info.color;
@@ -481,10 +507,10 @@ async function generateMapImage(bases) {
 
     // Shape legend
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 16px "DejaVu Sans", "Liberation Sans", sans-serif';
+    ctx.font = 'bold 16px MapFont';
     ctx.fillText('TYPES', legendX + 250, legendY + 10);
 
-    ctx.font = '14px "DejaVu Sans", "Liberation Sans", sans-serif';
+    ctx.font = '14px MapFont';
     ctx.fillStyle = '#3498db';
 
     // HQ marker
